@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.11" />
+    <PackageReference Include="Serilog.AspNetCore" Version="8.0.3" />
+    <ProjectReference Include="..\LogPulse.Client\LogPulse.Client.csproj" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="8.0.24" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\LogPulse.Shared\LogPulse.Shared.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Test projesinin internal yardımcı metotları (ör. LogIngestEndpoints.ParseBatch) görmesi için. -->
+    <InternalsVisibleTo Include="LogPulse.Tests" />
+  </ItemGroup>
+
+</Project>

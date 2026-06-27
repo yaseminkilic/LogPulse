@@ -1,0 +1,21 @@
+.diag-toolbar {
+    display: flex;
+    gap: 24px;
+    align-items: center;
+    margin: 16px 0;
+}
+
+.diag-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.diag-grid .btn {
+    min-width: 220px;
+}
+
+.diag-hub {
+    margin-left: auto;
+}

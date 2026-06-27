@@ -1,0 +1,13 @@
+.hub-banner {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    padding: 6px 12px;
+    text-align: center;
+    font-size: .9rem;
+    color: #fff;
+}
+
+.hub-banner--warn { background: #b8860b; }
+.hub-banner--info { background: #2563eb; }
+.hub-banner--down { background: #b91c1c; }

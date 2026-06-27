@@ -1,0 +1,140 @@
+@page "/diagnostics"
+@* Prerender disabled: this page's services (INotificationService, HubConnectionService, HttpClient)
+   are registered only in the client DI; they cannot be resolved during server prerender. *@
+@rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
+@using Microsoft.Extensions.Logging
+@inject HttpClient Http
+@inject HubConnectionService Hub
+@inject INotificationService Notifications
+@inject ICurrentUser User
+@inject ILogger<Diagnostics> Logger
+@implements IAsyncDisposable
+
+<PageTitle>Tanılama</PageTitle>
+
+@* Radzen toast + dialog host (inside the interactive tree) *@
+<RadzenComponents />
+<ConnectionBanner />
+
+<h1>Loglama & Hata Bildirim Tanılaması</h1>
+<p>Her düğme bir sınıflandırma dalını tetikler; bildirimin kanalı (sessiz / toast / modal) ona göre seçilir.</p>
+
+<div class="diag-toolbar">
+    <label>
+        <RadzenSwitch Value="@_isAdmin" ValueChanged="@OnAdminToggle" /> Admin modu (teknik detay + correlationId)
+    </label>
+    <span class="diag-hub">Hub: <b>@Hub.Status</b></span>
+</div>
+
+<h3>HTTP — sınıflandırma dalları</h3>
+<div class="diag-grid">
+    <button class="btn btn-success" @onclick='() => CallAsync("/api/demo/ok", "OK")'>200 OK (Success toast)</button>
+    <button class="btn btn-warning" @onclick='() => CallAsync("/api/demo/validation", "Validation")'>400 Validation (Warning toast)</button>
+    <button class="btn btn-warning" @onclick='() => CallAsync("/api/demo/business", "Business")'>422 Business (Warning toast)</button>
+    <button class="btn btn-warning" @onclick='() => CallAsync("/api/demo/forbidden", "Forbidden")'>403 Forbidden (Warning toast)</button>
+    <button class="btn btn-secondary" @onclick='() => CallAsync("/api/demo/cancelled", "Cancelled")'>499 Cancelled (Silent)</button>
+    <button class="btn btn-danger" @onclick='() => CallAsync("/api/demo/unhandled", "Unhandled")'>500 Unhandled (Error modal)</button>
+</div>
+
+<h3>Dedup / throttle / rate-limit</h3>
+<button class="btn btn-dark" @onclick="SpamAsync">Aynı 500'ü 10 kez hızlıca tetikle → tek bildirim</button>
+
+<h3>SignalR</h3>
+<div class="diag-grid">
+    <button class="btn btn-primary" @onclick="HubPingOk">Hub.Ping (başarılı)</button>
+    <button class="btn btn-danger" @onclick="HubPingThrow">Hub.Ping (hata → sınıflandırılmış)</button>
+</div>
+
+<h3>Veri erişimi (önemli log → SQLite)</h3>
+<button class="btn btn-outline-danger" @onclick="SimulateDataAccessError">
+    Veri kaydetme hatası logla (kategori: DataAccess)
+</button>
+
+<h3>Uçtan uca korelasyon izi (bağlantılı loglar)</h3>
+<p>
+    Bir hata üret; ardından <a href="/admin/logs" target="_blank">/admin/logs</a>'ta herhangi bir satıra tıkla →
+    "Bağlantılı loglar" paneli <b>aynı CorrelationId</b>'yi paylaşan kayıtları timeline olarak gösterir.
+</p>
+<div class="diag-grid">
+    <button class="btn btn-outline-danger" @onclick='() => CallAsync("/api/demo/crud-crash", "CRUD")'>
+        Gerçek DB CRUD hatası (tek hata → Server + Client izi)
+    </button>
+    <button class="btn btn-outline-primary" @onclick='() => CallAsync("/api/demo/order", "Order")'>
+        Senaryolu sipariş izi (çok adımlı, elle loglanmış)
+    </button>
+</div>
+
+@code {
+    private bool _isAdmin;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var hubUrl = new Uri(new Uri(Http.BaseAddress!.ToString()), "hubs/notifications").ToString();
+        await Hub.StartAsync(hubUrl);
+    }
+
+    private void OnAdminToggle(bool value)
+    {
+        _isAdmin = value;
+        if (User is CurrentUser cu) cu.IsAdmin = value;
+    }
+
+    private async Task CallAsync(string url, string label)
+    {
+        try
+        {
+            var res = await Http.GetAsync(url);
+            // ProblemDetailsHandler already reports failed responses; we show success here.
+            if (res.IsSuccessStatusCode)
+                Notifications.Success($"{label}: işlem başarılı.");
+        }
+        catch (Exception ex)
+        {
+            // The interceptor reported the network error; this is just a tracing log.
+            Logger.LogDebug(ex, "{Label} çağrısı istisna ile döndü.", label);
+        }
+    }
+
+    private async Task SpamAsync()
+    {
+        // 10 rapid 500s → thanks to dedup + rate-limit, a single (coalesced) notification is expected.
+        for (var i = 0; i < 10; i++)
+            await CallAsync("/api/demo/unhandled", "Unhandled");
+    }
+
+    private async Task HubPingOk()
+    {
+        var pong = await Hub.InvokeAsync<string>("Ping", false);
+        if (pong is not null) Notifications.Success($"Hub yanıtı: {pong}");
+    }
+
+    private Task HubPingThrow() => Hub.InvokeAsync<string>("Ping", true);
+
+    private void SimulateDataAccessError()
+    {
+        try
+        {
+            throw new InvalidOperationException("Kayıt veritabanına yazılamadı (demo).");
+        }
+        catch (Exception ex)
+        {
+            // "Important log": category DataAccess → persisted to SQLite regardless of level.
+            using (Logger.BeginScope(new Dictionary<string, object>
+                   {
+                       [LogPulse.Shared.Logging.LogCategories.PropertyName] =
+                           LogPulse.Shared.Logging.LogCategories.DataAccess
+                   }))
+            {
+                Logger.LogError(ex, "Veri kaydetme hatası.");
+            }
+            Notifications.Notify(new ApiError
+            {
+                ErrorCode = "DATA_SAVE",
+                Severity = ErrorSeverity.Error,
+                UserMessage = "Veri kaydedilemedi. Lütfen tekrar deneyin."
+            });
+        }
+    }
+
+    public async ValueTask DisposeAsync() => await Hub.DisposeAsync();
+}

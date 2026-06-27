@@ -1,0 +1,217 @@
+@page "/admin/logs"
+@* Prerender disabled: HttpClient lives only in the client DI. *@
+@rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
+@using LogPulse.Shared.Logging
+@inject HttpClient Http
+@inject ICurrentUser User
+
+<PageTitle>Admin · Loglar</PageTitle>
+
+<RadzenComponents />
+
+<h1>Log Görüntüleyici</h1>
+<p class="text-muted">SQLite'a kalıcılaşan önemli loglar. (Üretimde <code>[Authorize(Roles="Admin")]</code> ardında olmalı.)</p>
+
+<div class="filters">
+    <RadzenDropDown @bind-Value="_minLevel" Data="_levelOptions" TextProperty="Text" ValueProperty="Value"
+                    Placeholder="Seviye" Style="width:150px" Change="@(_ => LoadAsync())" />
+    <RadzenDropDown @bind-Value="_source" Data="_sourceOptions" TextProperty="Text" ValueProperty="Value"
+                    Placeholder="Kaynak" Style="width:140px" Change="@(_ => LoadAsync())" />
+    <RadzenDropDown @bind-Value="_category" Data="_categoryOptions" AllowClear="true"
+                    Placeholder="Kategori" Style="width:170px" Change="@(_ => LoadAsync())" />
+    <RadzenTextBox @bind-Value="_search" Placeholder="Mesaj/exception ara…" Style="width:220px"
+                   @oninput="@(e => { _search = e.Value?.ToString(); })" />
+    <RadzenNumeric @bind-Value="_take" Min="1" Max="1000" Style="width:90px" />
+    <RadzenButton Text="Yenile" Icon="refresh" Click="@LoadAsync" ButtonStyle="ButtonStyle.Primary" />
+    <span class="count">@_logs.Count kayıt</span>
+</div>
+
+<RadzenDataGrid @ref="_grid" Data="_logs" TItem="LogRecordDto" IsLoading="_loading"
+                AllowSorting="true" AllowColumnResize="true" Density="Density.Compact"
+                ExpandMode="DataGridExpandMode.Single" PageSize="25" AllowPaging="true"
+                SelectionMode="DataGridSelectionMode.Single" @bind-Value="_selectedRows" RowSelect="OnRowSelect">
+    <Columns>
+        <RadzenDataGridColumn TItem="LogRecordDto" Property="Timestamp" Title="Zaman" Width="180px">
+            <Template Context="log">
+                @* The server stores UTC; show it consistently in the user's local time. *@
+                @log.Timestamp.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")
+            </Template>
+        </RadzenDataGridColumn>
+        <RadzenDataGridColumn TItem="LogRecordDto" Property="LevelName" Title="Seviye" Width="110px">
+            <Template Context="log">
+                <RadzenBadge BadgeStyle="@LevelStyle(log.Level)" Text="@log.LevelName" />
+            </Template>
+        </RadzenDataGridColumn>
+        <RadzenDataGridColumn TItem="LogRecordDto" Property="Source" Title="Kaynak" Width="90px" />
+        <RadzenDataGridColumn TItem="LogRecordDto" Property="Category" Title="Kategori" Width="120px" />
+        <RadzenDataGridColumn TItem="LogRecordDto" Property="Message" Title="Mesaj" />
+        <RadzenDataGridColumn TItem="LogRecordDto" Property="CorrelationId" Title="CorrelationId" Width="180px">
+            <Template Context="log">
+                <code class="corr">@log.CorrelationId</code>
+            </Template>
+        </RadzenDataGridColumn>
+    </Columns>
+    <Template Context="log">
+        <div class="log-detail">
+            @if (!string.IsNullOrWhiteSpace(log.Exception))
+            {
+                <h5>Exception</h5>
+                <pre>@log.Exception</pre>
+            }
+            @if (!string.IsNullOrWhiteSpace(log.PropertiesJson))
+            {
+                <h5>Properties</h5>
+                <pre>@log.PropertiesJson</pre>
+            }
+            @if (string.IsNullOrWhiteSpace(log.Exception) && string.IsNullOrWhiteSpace(log.PropertiesJson))
+            {
+                <em>Ek detay yok.</em>
+            }
+        </div>
+    </Template>
+</RadzenDataGrid>
+
+@if (_selected is not null)
+{
+    <div class="related-panel">
+        <div class="related-head">
+            <h3>Bağlantılı loglar</h3>
+            @if (string.IsNullOrWhiteSpace(_selected.CorrelationId))
+            {
+                <span class="related-none">Seçilen kaydın CorrelationId'si yok — gruplanamıyor.</span>
+            }
+            else
+            {
+                <span>CorrelationId: <code class="corr">@_selected.CorrelationId</code></span>
+                <RadzenBadge BadgeStyle="BadgeStyle.Secondary" Text="@($"{_related.Count} kayıt")" />
+            }
+            <RadzenButton Icon="close" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small"
+                          Click="@(() => { _selected = null; _related.Clear(); _selectedRows = new List<LogRecordDto>(); })" />
+        </div>
+
+        @if (_relatedLoading)
+        {
+            <p><em>Yükleniyor…</em></p>
+        }
+        else if (!string.IsNullOrWhiteSpace(_selected.CorrelationId))
+        {
+            <ol class="timeline">
+                @foreach (var log in _related)
+                {
+                    <li class="@(log.Id == _selected.Id ? "tl-item tl-current" : "tl-item")">
+                        <span class="tl-time">@log.Timestamp.ToLocalTime().ToString("HH:mm:ss.fff")</span>
+                        <RadzenBadge BadgeStyle="@LevelStyle(log.Level)" Text="@log.LevelName" />
+                        <span class="tl-source">@log.Source</span>
+                        @if (!string.IsNullOrWhiteSpace(log.Category))
+                        {
+                            <span class="tl-cat">@log.Category</span>
+                        }
+                        <span class="tl-msg">@log.Message</span>
+                    </li>
+                }
+            </ol>
+        }
+    </div>
+}
+
+@code {
+    private RadzenDataGrid<LogRecordDto>? _grid;
+    private List<LogRecordDto> _logs = new();
+    private bool _loading;
+
+    // Selection + logs related by CorrelationId
+    private IList<LogRecordDto> _selectedRows = new List<LogRecordDto>();
+    private LogRecordDto? _selected;
+    private List<LogRecordDto> _related = new();
+    private bool _relatedLoading;
+
+    // Filters
+    private int? _minLevel = 3;          // default: Warning and above
+    private string? _source;
+    private string? _category;
+    private string? _search;
+    private int _take = 100;
+
+    private List<string> _categoryOptions = new();
+
+    private record Option(string Text, object? Value);
+    private readonly Option[] _levelOptions =
+    {
+        new("Tümü", null), new("Information+", 2), new("Warning+", 3), new("Error+", 4), new("Critical", 5)
+    };
+    private readonly Option[] _sourceOptions =
+    {
+        new("Tümü", null), new("Client", "Client"), new("Server", "Server"), new("Hub", "Hub")
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCategoriesAsync();
+        await LoadAsync();
+    }
+
+    private async Task LoadCategoriesAsync()
+    {
+        try { _categoryOptions = await Http.GetFromJsonAsync<List<string>>("api/admin/logs/categories") ?? new(); }
+        catch { /* leave empty */ }
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        try
+        {
+            var url = $"api/admin/logs?take={_take}";
+            if (_minLevel is not null) url += $"&minLevel={_minLevel}";
+            if (!string.IsNullOrWhiteSpace(_source)) url += $"&source={Uri.EscapeDataString(_source)}";
+            if (!string.IsNullOrWhiteSpace(_category)) url += $"&category={Uri.EscapeDataString(_category)}";
+            if (!string.IsNullOrWhiteSpace(_search)) url += $"&search={Uri.EscapeDataString(_search)}";
+
+            _logs = await Http.GetFromJsonAsync<List<LogRecordDto>>(url) ?? new();
+
+            // New data arrived → the old selection/trail is invalid.
+            _selected = null;
+            _related.Clear();
+            _selectedRows = new List<LogRecordDto>();
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    /// <summary>
+    /// When a row is selected, fetches all logs sharing the same CorrelationId from the server and
+    /// shows them as a chronological trail (the request's end-to-end flow).
+    /// </summary>
+    private async Task OnRowSelect(LogRecordDto log)
+    {
+        _selected = log;
+        _related.Clear();
+
+        if (string.IsNullOrWhiteSpace(log.CorrelationId))
+            return;
+
+        _relatedLoading = true;
+        try
+        {
+            var res = await Http.GetFromJsonAsync<List<LogRecordDto>>(
+                $"api/admin/logs?correlationId={Uri.EscapeDataString(log.CorrelationId)}&take=1000") ?? new();
+            // Oldest → newest (in the direction of the request flow).
+            _related = res.OrderBy(r => r.Id).ToList();
+        }
+        finally
+        {
+            _relatedLoading = false;
+        }
+    }
+
+    private static BadgeStyle LevelStyle(int level) => level switch
+    {
+        >= 5 => BadgeStyle.Danger,    // Critical
+        4 => BadgeStyle.Danger,       // Error
+        3 => BadgeStyle.Warning,      // Warning
+        2 => BadgeStyle.Info,         // Information
+        _ => BadgeStyle.Light
+    };
+}

@@ -1,0 +1,117 @@
+.filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    margin: 16px 0;
+}
+
+.filters .count {
+    margin-left: auto;
+    color: #6b7280;
+    font-size: .9rem;
+}
+
+.corr {
+    font-size: .8rem;
+    color: #6b7280;
+}
+
+.log-detail {
+    padding: 8px 12px;
+    background: #f8f9fa;
+}
+
+.log-detail pre {
+    white-space: pre-wrap;
+    word-break: break-word;
+    font-size: .8rem;
+    margin: 4px 0 12px;
+}
+
+/* CorrelationId ile bağlantılı loglar paneli */
+.related-panel {
+    margin-top: 20px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 12px 16px;
+    background: #fff;
+}
+
+.related-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
+.related-head h3 {
+    margin: 0;
+    font-size: 1.1rem;
+}
+
+.related-head .related-none {
+    color: #6b7280;
+}
+
+.related-head :last-child {
+    margin-left: auto;
+}
+
+.timeline {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border-left: 2px solid #e5e7eb;
+}
+
+.tl-item {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    padding: 6px 0 6px 14px;
+    position: relative;
+    font-size: .88rem;
+}
+
+.tl-item::before {
+    content: "";
+    position: absolute;
+    left: -7px;
+    top: 12px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #9ca3af;
+    border: 2px solid #fff;
+}
+
+.tl-current {
+    background: #eff6ff;
+    border-radius: 6px;
+}
+
+.tl-current::before {
+    background: #2563eb;
+}
+
+.tl-time {
+    font-variant-numeric: tabular-nums;
+    color: #6b7280;
+    min-width: 96px;
+}
+
+.tl-source {
+    font-weight: 600;
+    min-width: 56px;
+}
+
+.tl-cat {
+    color: #7c3aed;
+    font-size: .8rem;
+}
+
+.tl-msg {
+    flex: 1;
+    word-break: break-word;
+}

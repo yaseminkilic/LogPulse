@@ -1,0 +1,32 @@
+@implements IDisposable
+@inject HubConnectionService Hub
+
+@* Connection status is NOT an error: a thin banner at the top instead of a dialog. *@
+@if (Hub.Status != HubStatus.Connected)
+{
+    <div class="hub-banner @CssClass">
+        @Text
+    </div>
+}
+
+@code {
+    protected override void OnInitialized() => Hub.StatusChanged += OnChanged;
+
+    private void OnChanged() => InvokeAsync(StateHasChanged);
+
+    private string CssClass => Hub.Status switch
+    {
+        HubStatus.Reconnecting => "hub-banner--warn",
+        HubStatus.Connecting => "hub-banner--info",
+        _ => "hub-banner--down"
+    };
+
+    private string Text => Hub.Status switch
+    {
+        HubStatus.Reconnecting => "Canlı bağlantı koptu, yeniden bağlanılıyor…",
+        HubStatus.Connecting => "Canlı bağlantı kuruluyor…",
+        _ => "Canlı bağlantı yok. Veriler güncel olmayabilir."
+    };
+
+    public void Dispose() => Hub.StatusChanged -= OnChanged;
+}
