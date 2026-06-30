@@ -4,6 +4,7 @@ using LogPulse.Hubs;
 using LogPulse.Logging;
 using LogPulse.Middleware;
 using Microsoft.AspNetCore.SignalR;
+using Radzen;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -16,7 +17,9 @@ builder.Host.UseSerilog((ctx, cfg) => cfg
 
 // ---- Services ----
 builder.Services.AddRazorComponents()
-    .AddInteractiveWebAssemblyComponents();
+    .AddInteractiveServerComponents();
+    
+builder.Services.AddRadzenComponents();
 
 // Logging path: single entry point + SQLite persistence worker.
 builder.Services.Configure<LogIngestOptions>(builder.Configuration.GetSection(LogIngestOptions.SectionName));
@@ -64,7 +67,7 @@ app.MapDemoEndpoints();    // demo endpoints that trigger the classification bra
 app.MapHub<NotificationHub>("/hubs/notifications");
 
 app.MapRazorComponents<App>()
-    .AddInteractiveWebAssemblyRenderMode()
+    .AddInteractiveServerRenderMode()
     .AddAdditionalAssemblies(typeof(LogPulse.Client._Imports).Assembly);
 
 app.Run();

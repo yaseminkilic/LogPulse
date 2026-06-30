@@ -1,7 +1,7 @@
 @page "/diagnostics"
 @* Prerender disabled: this page's services (INotificationService, HubConnectionService, HttpClient)
    are registered only in the client DI; they cannot be resolved during server prerender. *@
-@rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
 @using Microsoft.Extensions.Logging
 @inject HttpClient Http
 @inject HubConnectionService Hub

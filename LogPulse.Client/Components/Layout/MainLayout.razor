@@ -1,0 +1,20 @@
+﻿@inherits LayoutComponentBase
+
+<RadzenComponents />
+
+<RadzenLayout Style="grid-template-rows: auto 1fr auto; min-height: 100vh;">
+    
+    <!-- Top Header & Left-sidebar Navigation -->
+    <NavMenu />
+
+    <!-- Main Content Area -->
+    <RadzenBody>
+        <div class="rz-p-4">
+            @Body
+        </div>
+    </RadzenBody>
+
+    <!-- Dashboard Footer -->
+    <MainFooter />
+</RadzenLayout>
+

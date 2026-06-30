@@ -1,0 +1,16 @@
+﻿ <RadzenFooter 
+    Style="background-color: var(--rz-panel-background-color); 
+            border-top: var(--rz-border-normal);     
+            --rz-footer-padding: 2px;
+            --rz-text-caption-font-size: 8px;
+            --rz-font-size-caption: 10px;">
+    <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center" Style="width: 100%; padding: 0.5rem 1rem;">
+        <RadzenText TextStyle="TextStyle.Caption">
+            &copy; @DateTime.Now.Year Dashboard App. All rights reserved.
+        </RadzenText>
+        <RadzenStack Orientation="Orientation.Horizontal" Gap="1rem">
+            <RadzenLink Text="Privacy Policy" Style="font-size: var(--rz-font-size-caption);" />
+            <RadzenLink Text="Terms of Service" Style="font-size: var(--rz-font-size-caption);" />
+        </RadzenStack>
+    </RadzenStack>
+</RadzenFooter>

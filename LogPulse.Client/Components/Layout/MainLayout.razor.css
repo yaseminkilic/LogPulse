@@ -94,3 +94,7 @@ main {
         right: 0.75rem;
         top: 0.5rem;
     }
+
+    body [id^="popup-"].rz-dropdown-panel {
+        --rz-dropdown-item-font-size: 12px;
+    }

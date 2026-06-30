@@ -1,9 +1,9 @@
 @page "/admin/logs"
 @* Prerender disabled: HttpClient lives only in the client DI. *@
-@rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
 @using LogPulse.Shared.Logging
 @inject HttpClient Http
-@inject ICurrentUser User
+@* @inject ICurrentUser User *@
 
 <PageTitle>Admin · Loglar</PageTitle>
 

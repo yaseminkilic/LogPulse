@@ -1,4 +1,5 @@
-﻿<!DOCTYPE html>
+﻿@using LogPulse.Shared
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -10,13 +11,17 @@
     <link rel="stylesheet" href="LogPulse.styles.css" />
     <link rel="stylesheet" href="_content/Radzen.Blazor/css/material-base.css" />
     <link rel="icon" type="image/png" href="favicon.png" />
+    <RadzenTheme Theme="@ApplicationConstants.ThemeLight" @rendermode="InteractiveServer" />
     <HeadOutlet />
 </head>
 
 <body>
-    <Routes />
-    <script src="_framework/blazor.web.js"></script>
-    <script src="_content/Radzen.Blazor/Radzen.Blazor.js"></script>
+
+    <Routes @rendermode="InteractiveServer"/>
+
+    <script src="_framework/blazor.web.js" ></script>
+    <script src="_content/Radzen.Blazor/Radzen.Blazor.js?v=@(typeof(Radzen.Colors).Assembly.GetName().Version)" ></script>
+
 </body>
 
 </html>

@@ -1,0 +1,50 @@
+
+@inject Radzen.ThemeService ThemeService
+@inject NavigationManager NavigationManager
+@inject ILogger<ThemeMenu> Logger
+
+@implements IDisposable
+
+<RadzenStack class="rz-p-0" Gap="0" Style="margin-left: auto; width: max-content; margin-right: 10px; --rz-input-font-size: 12px;">
+    <RadzenDropDown Name="ThemeDropDown" 
+        TValue="string" Value="@ThemeService.Theme" 
+        ValueChanged="@ChangeTheme" 
+        Data="@Themes.All" 
+        InputSize="InputSize.Small" 
+        Style="width: 100%; max-width: 400px;" 
+        TextProperty=@nameof(Theme.Text) 
+        ValueProperty=@nameof(Theme.Value) >
+    </RadzenDropDown>
+</RadzenStack>
+
+@code { 
+    void ChangeTheme(string value)
+    {
+        ThemeService.SetTheme(value);
+    }
+
+    void ChangeRightToLeft(bool value)
+    {
+        ThemeService.SetRightToLeft(value);
+    }
+
+    void ChangeWcag(bool value)
+    {
+        ThemeService.SetWcag(value);
+    }
+
+    protected override void OnInitialized()
+    {
+        ThemeService.ThemeChanged += OnThemeChanged;
+    }
+
+    public void Dispose()
+    {
+        ThemeService.ThemeChanged -= OnThemeChanged;
+    }
+
+    void OnThemeChanged()
+    {
+        Logger.LogDebug($"Theme changed to {ThemeService.Theme}");
+    }
+}

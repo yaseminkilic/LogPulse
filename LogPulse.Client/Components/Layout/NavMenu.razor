@@ -1,0 +1,44 @@
+
+<!-- Top Header Navigation -->
+<RadzenHeader Style="position: unset;">
+    <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0">
+        <RadzenSidebarToggle Click="@(() => sidebarExpanded = !sidebarExpanded)" />
+        <RadzenLabel Text="Header" />
+        <ThemeMenu />
+    </RadzenStack>
+</RadzenHeader>
+
+<!-- Left Sidebar Navigation -->
+<RadzenSidebar @bind-Expanded="@sidebarExpanded" Responsive="false" 
+    Style="@($"width: {(sidebarExpanded ? "250px" : "65px")}; transition: width 0.3s;")">
+    <RadzenPanelMenu DisplayStyle="@(sidebarExpanded ? MenuItemDisplayStyle.IconAndText : MenuItemDisplayStyle.Icon)" ShowArrow="false">
+        <RadzenPanelMenuItem Text="Overview" Icon="home" Path="home"/>
+        <RadzenPanelMenuItem Text="Demo" Icon="dashboard"  Path="diagnostics"/>
+        <RadzenPanelMenuItem Text="Metrics" Icon="auto_awesome" Path="admin/logs">
+            <RadzenPanelMenuItem Text="Sub1" Icon="color_lens" />
+            <RadzenPanelMenuItem Text="Sub2" Icon="invert_colors" />
+        </RadzenPanelMenuItem>
+    </RadzenPanelMenu>
+</RadzenSidebar>
+
+@code {
+    bool sidebarExpanded = true;
+}
+
+<style>
+    /* İkonların ortalanması ve sidebar kapandığında taşmaması için ek CSS */
+    .rz-sidebar {
+        overflow-x: hidden; /* Genişlik daralırken metinlerin taşmasını engeller */
+        transition: width 0.3s ease; /* Yumuşak geçiş sağlar */
+    }
+
+    /* Panel Menu ikonlarını dar sidebar'da ortalamak için */
+    .rz-panel-menu-item-icon {
+        margin-right: 0 !important; /* Kapalıyken sağdaki boşluğu kaldır */
+    }
+    
+    /* Sidebar kapalıyken metinlerin görünmemesi için garanti yöntem */
+    .rz-panel-menu-item-text {
+        white-space: nowrap;
+    }
+</style>
